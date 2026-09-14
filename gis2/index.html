@@ -36,9 +36,10 @@
   <script>
   (() => {
     const canvas=document.getElementById('map'),ctx=canvas.getContext('2d'),terrainImage=document.getElementById('terrainImage'),W=1400,H=900;
+    const DEFAULT_VIEW=Object.freeze({zoom:1,viewX:W/2,viewY:H/2});
     const LOGGER_URL='https://script.google.com/macros/s/AKfycbzWrIqOaAb6pdmTA2Pyrv3R9BIPuJb_U3Njgf4pqKyu0zPrDaFQxQ_ztJPb4f7Tp4DG/exec',MAX_SCORE=15,DEDUCTION_PER_WRONG=.25;
     const state={base:'aerial',layers:{settlements:false,roads:false,water:false,hazard:false,resources:false},clicked:null,mission:0,earned:[],zoom:1,viewX:700,viewY:450,drag:null,panned:false,sessionId:'',studentName:'',period:'',totalWrongAttempts:0,wrongByMission:{},score:MAX_SCORE};
-    let topographicRaster=null;
+    let topographicRaster=null,resetViewMessageTimer=0;
     // The original aerial image was designed on a 1000 × 640 map.  The larger
     // world keeps those same geographic locations by scaling the original
     // coordinates before any GIS layer is drawn.
@@ -128,7 +129,7 @@
     function updateFeature(){const f=features[state.clicked];if(!f||!isVisible(state.clicked)){document.getElementById('featureName').textContent='Nothing selected';document.getElementById('featureType').textContent='Click a visible feature';document.getElementById('featureText').textContent='Turn on a layer, then click one of its map symbols to read its spatial information.';return}document.getElementById('featureName').textContent=f.name;document.getElementById('featureType').textContent=f.type;document.getElementById('featureText').textContent=f.text}
     function clampView(){const halfW=W/(2*state.zoom),halfH=H/(2*state.zoom);state.viewX=Math.max(halfW,Math.min(W-halfW,state.viewX));state.viewY=Math.max(halfH,Math.min(H-halfH,state.viewY))}
     function setZoom(next,screenX=W/2,screenY=H/2){const previous=state.zoom,worldX=state.viewX+(screenX-W/2)/previous,worldY=state.viewY+(screenY-H/2)/previous;state.zoom=Math.max(1,Math.min(3,Math.round(next*100)/100));state.viewX=worldX-(screenX-W/2)/state.zoom;state.viewY=worldY-(screenY-H/2)/state.zoom;clampView();render()}
-    function resetView(){state.zoom=1;state.viewX=W/2;state.viewY=H/2;state.panned=false;render()}
+    function resetView(){state.zoom=DEFAULT_VIEW.zoom;state.viewX=DEFAULT_VIEW.viewX;state.viewY=DEFAULT_VIEW.viewY;state.panned=false;state.drag=null;render();const button=document.getElementById('resetView');button.textContent='View reset';button.setAttribute('aria-label','Map view reset to 100 percent');clearTimeout(resetViewMessageTimer);resetViewMessageTimer=window.setTimeout(()=>{button.textContent='Reset view';button.setAttribute('aria-label','Reset map view')},1200)}
     function updateZoomUI(){document.getElementById('zoomReadout').textContent=`Zoom ${Math.round(state.zoom*100)}%`;canvas.style.cursor=state.drag?'grabbing':'grab'}
     function roundedScore(){return Math.max(0,Math.round(state.score*100)/100)}
     function makeSessionId(){return(window.crypto&&crypto.randomUUID?crypto.randomUUID():`gis2-${Date.now()}-${Math.random().toString(16).slice(2)}`).slice(0,80)}
